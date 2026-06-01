@@ -501,8 +501,9 @@ app.layout = html.Div([
             dcc.RadioItems(
                 id="academic-export-mode",
                 options=[
-                    {"label": " Teaching appointments only", "value": "none"},
                     {"label": " Teaching appointments + every uploaded USAFA Academic Calendar event", "value": "all"},
+                    {"label": " Teaching appointments only", "value": "none"},
+                    
                 ],
                 value="none",
                 style={"margin": "8px 0 16px 0"},
@@ -512,7 +513,7 @@ app.layout = html.Div([
             dcc.RadioItems(
                 id="reminder-on",
                 options=[{"label": " No reminder", "value": "no"}, {"label": " Reminder", "value": "yes"}],
-                value="yes",
+                value="no",
                 inline=True,
                 style={"margin": "7px 0 10px 0"},
                 labelStyle={"marginRight": "18px"},
