@@ -505,7 +505,7 @@ app.layout = html.Div([
                     {"label": " Teaching appointments only", "value": "none"},
                     
                 ],
-                value="none",
+                value="all",
                 style={"margin": "8px 0 16px 0"},
                 labelStyle={"display": "block", "marginBottom": "6px"},
             ),
