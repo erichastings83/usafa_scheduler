@@ -1,38 +1,40 @@
-This Dash app creates Outlook-compatible calendar imports from the USAFA Academic Calendar CSV.
+# USAFA Scheduler — Render deployment bundle (v6)
 
-Users can choose one of three export modes:
+This Dash app creates Outlook-ready teaching calendars. It now bundles the Fall 2026 USAFA Academic Calendar as the default input. Users can immediately select their courses and periods without uploading a file. They can still upload another USAFA Academic Calendar CSV to replace the bundled calendar for that session.
 
-1. **Teaching appointments only**
-2. **Teaching + major academic calendar events** — excludes the daily M/T rotation labels such as `M1`, `T1`, `M2`, and `T2`
-3. **Teaching + every uploaded CSV event** — includes every row from the uploaded USAFA Academic Calendar CSV, including the M/T rotation labels
+## Repository contents
 
-The app can also export academic-calendar events without adding any course rows when option 2 or 3 is selected.
+```text
+app.py
+requirements.txt
+Procfile
+render.yaml
+data/
+  Fall 26 - Academic Calendar.csv
+```
 
-## Existing features
+## Deploy on Render
 
-- Upload a USAFA Academic Calendar CSV
-- Add multiple courses
-- Select any combination of M1–M6 and T1–T6 periods for each course
-- Enter course names, locations, descriptions, and categories
-- Add reminders to teaching appointments
-- Mark teaching appointments private and set their Outlook busy status
-- Automatically shift afternoon teaching periods on Modified SOC days
-- Export `.ics` or Outlook `.csv`
-- Export `.ics` teaching appointments as UTC timestamps so Outlook displays the correct Mountain-time class times through daylight-saving changes
+Upload all of these files and folders to the root of a GitHub repository. Create a Render Web Service with:
+
+```text
+Build command: pip install -r requirements.txt
+Start command: gunicorn app:server --bind 0.0.0.0:$PORT
+```
+
+The included `render.yaml` contains the same service configuration.
+
+## Default calendar behavior
+
+- When no file is uploaded, the app reads `data/Fall 26 - Academic Calendar.csv`.
+- When a user uploads another CSV, that replacement file is used for preview and download during the current browser session.
+- The uploaded replacement does not modify the bundled CSV on the server.
 
 ## Run locally
 
 ```bash
-pip install dash pandas
-python usafa_scheduler_app_v4.py
+pip install -r requirements.txt
+python app.py
 ```
 
-Then open:
-
-```text
-http://127.0.0.1:8050/
-```
-
-## Recommended import workflow
-
-Create a temporary Outlook calendar for testing before importing a large file. This makes it easy to remove an import and try a different export mode.
+Then open `http://127.0.0.1:8050/`.
