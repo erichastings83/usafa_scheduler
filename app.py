@@ -501,11 +501,10 @@ app.layout = html.Div([
             dcc.RadioItems(
                 id="academic-export-mode",
                 options=[
-                    {"label": " Teaching appointments + every uploaded USAFA Academic Calendar event", "value": "all"},
                     {"label": " Teaching appointments only", "value": "none"},
-                    
+                    {"label": " Teaching appointments + every uploaded USAFA Academic Calendar event", "value": "all"},
                 ],
-                value="all",
+                value="none",
                 style={"margin": "8px 0 16px 0"},
                 labelStyle={"display": "block", "marginBottom": "6px"},
             ),
@@ -513,7 +512,7 @@ app.layout = html.Div([
             dcc.RadioItems(
                 id="reminder-on",
                 options=[{"label": " No reminder", "value": "no"}, {"label": " Reminder", "value": "yes"}],
-                value="no",
+                value="yes",
                 inline=True,
                 style={"margin": "7px 0 10px 0"},
                 labelStyle={"marginRight": "18px"},
@@ -527,6 +526,20 @@ app.layout = html.Div([
 
         html.Div([
             html.H3("4. Preview or download", style={"color": COLORS["navy"], "marginTop": "0"}),
+            html.Label("Appointments to include in preview", style={"fontWeight": "bold", "color": COLORS["navy"], "display": "block"}),
+            dcc.Dropdown(
+                id="preview-limit",
+                options=[
+                    {"label": "10 appointments", "value": "10"},
+                    {"label": "20 appointments", "value": "20"},
+                    {"label": "50 appointments", "value": "50"},
+                    {"label": "100 appointments", "value": "100"},
+                    {"label": "All appointments", "value": "all"},
+                ],
+                value="20",
+                clearable=False,
+                style={"width": "240px", "margin": "6px 0 14px 0"},
+            ),
             html.Button("Preview events", id="preview", n_clicks=0, style=SECONDARY_BUTTON_STYLE),
             html.Button("Download .ics", id="download-ics", n_clicks=0, style={**BUTTON_STYLE, "marginLeft": "10px"}),
             html.Button("Download Outlook .csv", id="download-csv", n_clicks=0, style={**BUTTON_STYLE, "marginLeft": "10px"}),
@@ -589,18 +602,21 @@ COURSE_STATES = [
     State("calendar-upload", "contents"),
     *COURSE_STATES,
     State("academic-export-mode", "value"),
+    State("preview-limit", "value"),
     State("reminder-on", "value"), State("reminder-minutes", "value"), State("busy-status", "value"), State("private", "value"),
     prevent_initial_call=True,
 )
-def preview_events(_n_clicks, contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values):
+def preview_events(_n_clicks, contents, names, periods, locations, descriptions, categories, academic_mode, preview_limit_value, reminder_value, reminder_minutes, busy_status, private_values):
     try:
         df, events = make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values)
         academic_df = filter_academic_rows(df, academic_mode)
+        total = len(events) + len(academic_df)
+        preview_limit = total if preview_limit_value == "all" else max(1, int(preview_limit_value or 20))
         sample = [
             {"Type": "Teaching", "Date": fmt_date(e["date"]), "Start": fmt_time(e["start"]), "End": fmt_time(e["end"]), "Subject": e["subject"], "Location": e["location"], "Modified SOC": "Yes" if e["modified_soc"] else ""}
-            for e in events[:20]
+            for e in events[:preview_limit]
         ]
-        remaining = max(0, 20 - len(sample))
+        remaining = max(0, preview_limit - len(sample))
         for _, row in academic_df.head(remaining).iterrows():
             sample.append({
                 "Type": "Academic calendar",
@@ -613,14 +629,15 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
             })
         table = dash_table.DataTable(
             data=sample,
-            page_size=20,
+            page_size=max(1, min(len(sample), 25)),
             style_cell={"textAlign": "left", "padding": "8px", "fontFamily": "Arial, Helvetica, sans-serif"},
             style_header={"backgroundColor": COLORS["navy"], "color": COLORS["white"], "fontWeight": "bold"},
             style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": COLORS["silver_light"]}],
             style_table={"overflowX": "auto", "border": f"1px solid {COLORS['silver']}"},
         )
-        total = len(events) + len(academic_df)
-        return f"Generated {total} events: {len(events)} teaching appointment(s) and {len(academic_df)} uploaded academic calendar event(s). Showing the first 20.", table
+        shown = len(sample)
+        preview_text = "all appointments" if shown == total else f"the first {shown}"
+        return f"Generated {total} events: {len(events)} teaching appointment(s) and {len(academic_df)} uploaded academic calendar event(s). Showing {preview_text}.", table
     except Exception as exc:
         return f"Problem: {exc}", ""
 
