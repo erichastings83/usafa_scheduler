@@ -231,7 +231,12 @@ app.layout = html.Div([
                             html.Small([
                                 html.I(className="bi bi-info-circle me-1"),
                                 "Timezone is set to ", html.Strong("America/Denver"), " for ICS generation."
-                            ], className="text-muted d-block mt-3")
+                            ], className="text-muted d-block mt-3"),
+                            html.Small([
+                                html.I(className="bi bi-envelope me-1"),
+                                "Questions or comments can be directed to Lt Col Eric Hastings, DFMS, ",
+                                html.A("eric.hastings@afacademy.af.edu", href="mailto:eric.hastings@afacademy.af.edu", className="text-decoration-none")
+                            ], className="text-muted d-block mt-1")
                         ])
                     ])
                 ], className="mb-5 shadow-sm"),
