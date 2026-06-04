@@ -90,22 +90,19 @@ app.layout = html.Div([
                             },
                             multiple=False,
                         ),
-                        html.Div([
-                            html.A(
-                                [html.I(className="bi bi-file-earmark-pdf me-1"), "View the official AY 26-27 Academic Calendar (PDF)"],
-                                href=app.get_asset_url("AY 2026 - 2027 Calendar Approved 7 Jan 26.pdf"),
-                                target="_blank",
-                                className="text-decoration-none small text-secondary"
-                            ),
-                            html.Span(" | ", className="text-muted small d-none d-sm-inline mx-2"),
-                            html.A(
-                                [html.I(className="bi bi-file-earmark-word me-1"), "Need help? ", html.U("Click here"), " to learn how to export your own CSV"],
-                                href=app.get_asset_url("Generate a .csv Calendar.docx"),
-                                target="_blank",
-                                className="text-decoration-none small text-secondary"
-                            ),
-                        ], className="mt-2 text-center d-flex flex-column flex-sm-row justify-content-center align-items-center"),
+                        html.A(
+                            [html.I(className="bi bi-file-earmark-word me-1"), "Need help? ", html.U("Click here"), " to learn how to export your own CSV"],
+                            href=app.get_asset_url("Generate a .csv Calendar.docx"),
+                            target="_blank",
+                            className="d-block mt-2 text-decoration-none small text-secondary text-center"
+                        ),
                         html.Div(id="upload-status", className="mt-3 fw-bold text-success"),
+                        html.A(
+                            [html.I(className="bi bi-file-earmark-pdf me-1"), "View the AY 26-27 Academic Calendar (PDF)"],
+                            href=app.get_asset_url("AY 2026 - 2027 Calendar Approved 7 Jan 26.pdf"),
+                            target="_blank",
+                            className="d-block mt-3 text-decoration-none small text-secondary text-center"
+                        ),
                     ])
                 ], className="mb-4 shadow-sm"),
 
@@ -141,18 +138,17 @@ app.layout = html.Div([
                                 dbc.RadioItems(
                                     id="academic-export-mode",
                                     options=[
-                                        {"label": " Teaching appointments only", "value": "none"},
                                         {"label": " Teaching appointments + uploaded academic events", "value": "all"},
+                                        {"label": " Teaching appointments only", "value": "none"},
                                     ],
-                                    value="none",
+                                    value="all",
                                     className="mb-3",
                                 ),
                                 dbc.Label("Reminder for teaching appointments", className="fw-bold", style={"color": USAFA_NAVY}),
                                 dbc.RadioItems(
                                     id="reminder-on",
                                     options=[{"label": " No reminder", "value": "no"}, {"label": " Reminder", "value": "yes"}],
-                                    value="yes",
-                                    inline=True,
+                                    value="no",
                                     className="mb-3",
                                 ),
                             ], md=6),
