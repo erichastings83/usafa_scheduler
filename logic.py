@@ -295,12 +295,22 @@ def events_to_outlook_csv(events, calendar_df=None, academic_mode="none"):
 
 def add_common_ics_lines(lines, subject, location, description, categories, show_time_as, private):
     escaped_cats = ",".join(escape_ics(c.strip()) for c in str(categories).split(",") if c.strip())
+    
+    busy_status_map = {
+        "0": "FREE",
+        "1": "TENTATIVE",
+        "2": "BUSY",
+        "3": "OOF"
+    }
+    ms_status = busy_status_map.get(str(show_time_as), "BUSY")
+    
     lines.extend([
         f"SUMMARY:{escape_ics(subject)}",
         f"LOCATION:{escape_ics(location)}",
         f"DESCRIPTION:{escape_ics(description)}",
         f"CATEGORIES:{escaped_cats}",
         "TRANSP:TRANSPARENT" if str(show_time_as) == "0" else "TRANSP:OPAQUE",
+        f"X-MICROSOFT-CDO-BUSYSTATUS:{ms_status}",
         "CLASS:PRIVATE" if private else "CLASS:PUBLIC",
     ])
 
