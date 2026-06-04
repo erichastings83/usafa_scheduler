@@ -1,6 +1,6 @@
 # USAFA Teaching Schedule Generator
 
-This Dash app generates Outlook-compatible `.ics` and `.csv` files for USAFA teaching schedules.
+This Dash app generates Outlook-compatible `.ics` files for USAFA teaching schedules.
 
 ## Recent Updates
 
