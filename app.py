@@ -91,7 +91,7 @@ app.layout = html.Div([
                             multiple=False,
                         ),
                         html.A(
-                            [html.I(className="bi bi-file-earmark-word me-1"), "Need help? ", html.U("Click here"), " to learn how to export your own CSV"],
+                            [html.I(className="bi bi-file-earmark-word me-1"), "Need help? ", html.U("Click here and download"), " to learn how to export your own CSV"],
                             href=app.get_asset_url("Generate a .csv Calendar.docx"),
                             target="_blank",
                             className="d-block mt-2 text-decoration-none small text-secondary text-center"
@@ -286,7 +286,7 @@ def upload_status(contents, filename):
         if full_range:
             full_start = full_range[0].strftime('%B %d, %Y')
             full_end = full_range[1].strftime('%B %d, %Y')
-            full_range_str = f" The full academic calendar spans {full_start} to {full_end}."
+            full_range_str = f" The full uploaded academic calendar spans {full_start} to {full_end}."
             
         return f"Loaded {source}: found {len(days)} M/T class days{date_range} and {len(modified)} modified SOC day(s).{full_range_str}", None
     except Exception as exc:
@@ -342,7 +342,7 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
             return dbc.Alert(f"{total} events are ready to download (preview turned off).", color="info", dismissable=True), ""
             
         sample = [
-            {"Type": "Teaching", "Date": logic.fmt_date(e["date"]), "Start": logic.fmt_time(e["start"]), "End": logic.fmt_time(e["end"]), "Subject": e["subject"], "Location": e["location"], "Modified SOC": "Yes" if e["modified_soc"] else ""}
+            {"Type": "Teaching", "Date": logic.fmt_date(e["date"]), "Start": logic.fmt_time(e["start"]), "End": logic.fmt_time(e["end"]), "Subject": e["subject"], "Location": e["location"], "Modified SOC Day": "Yes" if e["modified_soc"] else ""}
             for e in events[:preview_limit]
         ]
         remaining = max(0, preview_limit - len(sample))
