@@ -113,7 +113,7 @@ app.layout = html.Div([
                         dbc.Alert([
                             html.I(className="bi bi-exclamation-triangle-fill text-warning me-2"),
                             html.Strong("Caution: "),
-                            "This program assumes any Modified SOC days move afternoon classes an hour earlier on that day. No other changes are made."
+                            "This program assumes any \"Modified SOC\" days move afternoon classes an hour earlier on that day. This is consistent across AY26-27. Other modified schedules (e.g. due to NCLS) are not incorporated and would have to be manually adjusted once details are known."
                         ], color="light", className="mb-3 border border-warning", style={"fontSize": "0.9rem"}),
                         
                         html.Div(id="course-rows", children=[make_course_row()]),
