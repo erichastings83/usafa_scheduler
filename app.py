@@ -21,15 +21,15 @@ def make_course_row():
         dbc.CardBody([
             dbc.Row([
                 dbc.Col([
-                    dbc.Label("Course name", className="fw-bold"),
+                    dbc.Label(["Course name", html.Span(" *", className="text-danger")], className="fw-bold"),
                     dbc.Input(id={"type": "course-name", "index": uid}, type="text", placeholder="e.g., Math 356", persistence=True, persistence_type="session"),
                 ], width=12, md=3, className="mb-2 mb-md-0"),
                 dbc.Col([
-                    dbc.Label("Periods", className="fw-bold"),
+                    dbc.Label(["Periods", html.Span(" *", className="text-danger")], className="fw-bold"),
                     dcc.Dropdown(id={"type": "course-periods", "index": uid}, options=logic.PERIOD_OPTIONS, multi=True, placeholder="Select M/T periods", persistence=True, persistence_type="session", style={"minWidth": "100%"}, maxHeight=300),
                 ], width=12, md=4, className="mb-2 mb-md-0"),
                 dbc.Col([
-                    dbc.Label("Location", className="fw-bold"),
+                    dbc.Label(["Location", html.Span(" (Optional)", className="text-muted fw-normal ms-1", style={"fontSize": "0.85em"})], className="fw-bold"),
                     dbc.Input(id={"type": "course-location", "index": uid}, type="text", placeholder="e.g., Fairchild Hall 2E17", persistence=True, persistence_type="session"),
                 ], width=12, md=3, className="mb-2 mb-md-0"),
                 dbc.Col([
@@ -39,11 +39,11 @@ def make_course_row():
             ], className="mb-2"),
             dbc.Row([
                 dbc.Col([
-                    dbc.Label("Description", className="fw-bold"),
+                    dbc.Label(["Description", html.Span(" (Optional)", className="text-muted fw-normal ms-1", style={"fontSize": "0.85em"})], className="fw-bold"),
                     dbc.Input(id={"type": "course-description", "index": uid}, type="text", placeholder="Optional", persistence=True, persistence_type="session"),
                 ], width=12, md=8, className="mb-2 mb-md-0"),
                 dbc.Col([
-                    dbc.Label("Category", className="fw-bold"),
+                    dbc.Label(["Category", html.Span(" (Optional)", className="text-muted fw-normal ms-1", style={"fontSize": "0.85em"})], className="fw-bold"),
                     dbc.Input(id={"type": "course-category", "index": uid}, type="text", value="Teaching", persistence=True, persistence_type="session"),
                 ], width=12, md=4),
             ])
@@ -392,7 +392,11 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
             page_size=max(1, min(len(sample), 25)),
             style_cell={"textAlign": "left", "padding": "10px", "fontFamily": "Arial, Helvetica, sans-serif"},
             style_header={"backgroundColor": USAFA_NAVY, "color": "white", "fontWeight": "bold"},
-            style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "#F8F9FA"}],
+            style_data_conditional=[
+                {"if": {"row_index": "odd"}, "backgroundColor": "#F8F9FA"},
+                {"if": {"column_id": "Type", "filter_query": "{Type} = 'Teaching'"}, "backgroundColor": "#CFE2FF", "color": "#084298", "fontWeight": "bold"},
+                {"if": {"column_id": "Type", "filter_query": "{Type} = 'Academic calendar'"}, "backgroundColor": "#E2E3E5", "color": "#41464B", "fontWeight": "bold"},
+            ],
             style_table={"overflowX": "auto", "border": "1px solid #dee2e6", "borderRadius": "4px"},
         )
         shown = len(sample)
@@ -416,6 +420,49 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
 def download_file(_n_ics, contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values):
     df, events = make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values)
     return dict(content=logic.events_to_ics(events, df, academic_mode), filename="usafa_schedule.ics", type="text/calendar")
+
+@app.callback(
+    Output({"type": "course-name", "index": ALL}, "invalid"),
+    Output({"type": "course-periods", "index": ALL}, "style"),
+    Input("preview", "n_clicks"),
+    Input("download-ics", "n_clicks"),
+    State({"type": "course-name", "index": ALL}, "value"),
+    State({"type": "course-periods", "index": ALL}, "value"),
+    State("academic-export-mode", "value"),
+    prevent_initial_call=True
+)
+def validate_inputs(preview_clicks, download_clicks, names, periods, academic_mode):
+    name_invalids = []
+    period_styles = []
+    
+    valid_count = 0
+    for name, selected_periods in zip(names, periods):
+        if str(name or "").strip() and selected_periods:
+            valid_count += 1
+            
+    for name, selected_periods in zip(names, periods):
+        name_val = str(name or "").strip()
+        default_style = {"minWidth": "100%"}
+        invalid_style = {"minWidth": "100%", "border": "1px solid #dc3545", "borderRadius": "5px"}
+        
+        if name_val and not selected_periods:
+            name_invalids.append(False)
+            period_styles.append(invalid_style)
+        elif not name_val and selected_periods:
+            name_invalids.append(True)
+            period_styles.append(default_style)
+        elif not name_val and not selected_periods:
+            if valid_count == 0 and academic_mode != "academic":
+                name_invalids.append(True)
+                period_styles.append(invalid_style)
+            else:
+                name_invalids.append(False)
+                period_styles.append(default_style)
+        else:
+            name_invalids.append(False)
+            period_styles.append(default_style)
+            
+    return name_invalids, period_styles
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "8050")), debug=False)
