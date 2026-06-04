@@ -114,7 +114,7 @@ app.layout = html.Div([
                             html.I(className="bi bi-exclamation-triangle-fill text-warning me-2"),
                             html.Strong("Caution: "),
                             "This program assumes any \"Modified SOC\" days move afternoon classes an hour earlier on that day. This is consistent across AY26-27. Other modified schedules (e.g. due to NCLS) are not incorporated and would have to be manually adjusted once details are known."
-                        ], color="light", className="mb-3 border border-warning", style={"fontSize": "0.9rem"}),
+                        ], color="light", className="mb-3 border border-warning text-center", style={"fontSize": "0.9rem"}),
                         
                         html.Div(id="course-rows", children=[make_course_row()]),
                         dbc.Row([
@@ -267,8 +267,7 @@ def manage_course_rows(add_clicks, remove_clicks, clear_clicks, children):
     Output("upload-status", "children"), 
     Output("alert-container", "children", allow_duplicate=True),
     Input("calendar-upload", "contents"), 
-    State("calendar-upload", "filename"),
-    prevent_initial_call=True
+    State("calendar-upload", "filename")
 )
 def upload_status(contents, filename):
     try:
@@ -354,7 +353,7 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
                 "End": logic.clean_value(row.get("End Date", "")) if logic.truthy(row.get("All day event", False)) else logic.clean_value(row.get("End Time", "")),
                 "Subject": logic.clean_value(row.get("Subject", "")),
                 "Location": logic.clean_value(row.get("Location", "")),
-                "Modified SOC": "",
+                "Modified SOC Day": "",
             })
             
         table = dash_table.DataTable(
