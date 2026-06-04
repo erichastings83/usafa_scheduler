@@ -113,7 +113,7 @@ app.layout = html.Div([
                         dbc.Alert([
                             html.I(className="bi bi-exclamation-triangle-fill text-warning me-2"),
                             html.Strong("Caution: "),
-                            "This program assumes any \"Modified SOC\" days move afternoon classes an hour earlier on that day. This is consistent across AY26-27. Other modified schedules (e.g. due to NCLS) are not incorporated and would have to be manually adjusted once details are known."
+                            "This program assumes any \"Modified SOC\" days move afternoon classes an hour earlier on that day. As of the date of the calendar upload, this is accurate across AY26-27. Other modified schedules (e.g. due to NCLS) are not incorporated and would have to be manually adjusted in Outlook once details are known."
                         ], color="light", className="mb-3 border border-warning text-center", style={"fontSize": "0.9rem"}),
                         
                         html.Div(id="course-rows", children=[make_course_row()]),
