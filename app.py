@@ -26,7 +26,7 @@ def make_course_row():
                 ], width=12, md=3, className="mb-2 mb-md-0"),
                 dbc.Col([
                     dbc.Label("Periods", className="fw-bold"),
-                    dcc.Dropdown(id={"type": "course-periods", "index": uid}, options=logic.PERIOD_OPTIONS, multi=True, placeholder="Select M/T periods", persistence=True, persistence_type="session", style={"minWidth": "100%"}),
+                    dcc.Dropdown(id={"type": "course-periods", "index": uid}, options=logic.PERIOD_OPTIONS, multi=True, placeholder="Select M/T periods", persistence=True, persistence_type="session", style={"minWidth": "100%"}, maxHeight=300),
                 ], width=12, md=4, className="mb-2 mb-md-0"),
                 dbc.Col([
                     dbc.Label("Location", className="fw-bold"),
