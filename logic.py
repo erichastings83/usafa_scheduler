@@ -144,11 +144,13 @@ def extract_schedule_days(calendar_df: pd.DataFrame):
 
     schedule_days = []
     modified_dates = set()
+    all_dates = []
 
     for _, row in calendar_df.iterrows():
         subject = str(row.get("Subject", "")).strip()
         try:
             start_date = parse_date(row.get("Start Date", ""))
+            all_dates.append(start_date)
         except Exception:
             continue
 
@@ -162,7 +164,9 @@ def extract_schedule_days(calendar_df: pd.DataFrame):
     schedule_days.sort(key=lambda x: (x[0], x[1], x[2]))
     if not schedule_days:
         raise ValueError("No M-Day/T-Day rows were found. Expected subjects such as M1, M2, T1, or T2.")
-    return schedule_days, modified_dates
+    
+    full_range = (min(all_dates), max(all_dates)) if all_dates else None
+    return schedule_days, modified_dates, full_range
 
 
 def assemble_course_rows(names, periods, locations, descriptions, categories, allow_empty=False):
@@ -186,7 +190,7 @@ def assemble_course_rows(names, periods, locations, descriptions, categories, al
 
 
 def build_events(calendar_df, course_rows, reminder_on, reminder_minutes, busy_status, private):
-    schedule_days, modified_dates = extract_schedule_days(calendar_df)
+    schedule_days, modified_dates, _ = extract_schedule_days(calendar_df)
     events = []
 
     for course in course_rows:

@@ -88,7 +88,19 @@ app.layout = html.Div([
                             },
                             multiple=False,
                         ),
+                        html.A(
+                            [html.I(className="bi bi-file-earmark-pdf me-1"), "Need help? How to export your own DFR Calendar CSV"],
+                            href=app.get_asset_url("Linking_DFR_Calendar.pdf"),
+                            target="_blank",
+                            className="d-block mt-2 text-decoration-none small text-secondary text-center"
+                        ),
                         html.Div(id="upload-status", className="mt-3 fw-bold text-success"),
+                        
+                        dbc.Alert([
+                            html.I(className="bi bi-exclamation-triangle-fill text-warning me-2"),
+                            html.Strong("Caution: "),
+                            "This program assumes any Modified SOC days move afternoon classes an hour earlier on that day. No other changes are made."
+                        ], color="light", className="mt-3 mb-0 border border-warning", style={"fontSize": "0.9rem"}),
                     ])
                 ], className="mb-4 shadow-sm"),
 
@@ -166,6 +178,7 @@ app.layout = html.Div([
                                 dbc.Select(
                                     id="preview-limit",
                                     options=[
+                                        {"label": "None (Turn off)", "value": "0"},
                                         {"label": "10 appointments", "value": "10"},
                                         {"label": "20 appointments", "value": "20"},
                                         {"label": "50 appointments", "value": "50"},
@@ -253,9 +266,22 @@ def manage_course_rows(add_clicks, remove_clicks, clear_clicks, children):
 def upload_status(contents, filename):
     try:
         df = logic.parse_uploaded_csv(contents)
-        days, modified = logic.extract_schedule_days(df)
+        days, modified, full_range = logic.extract_schedule_days(df)
         source = filename if contents else f"bundled default: {logic.DEFAULT_CALENDAR_FILENAME}"
-        return f"Loaded {source}: found {len(days)} M/T class days and {len(modified)} modified SOC day(s).", None
+        
+        date_range = ""
+        if days:
+            start_date = days[0][0].strftime('%B %d, %Y')
+            end_date = days[-1][0].strftime('%B %d, %Y')
+            date_range = f" ({start_date} to {end_date})"
+            
+        full_range_str = ""
+        if full_range:
+            full_start = full_range[0].strftime('%B %d, %Y')
+            full_end = full_range[1].strftime('%B %d, %Y')
+            full_range_str = f" The full academic calendar spans {full_start} to {full_end}."
+            
+        return f"Loaded {source}: found {len(days)} M/T class days{date_range} and {len(modified)} modified SOC day(s).{full_range_str}", None
     except Exception as exc:
         return "", dbc.Alert(f"Calendar problem: {exc}", color="danger", dismissable=True)
 
@@ -303,7 +329,11 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
         if total == 0:
             return dbc.Alert("No events generated. Please add courses with M/T periods.", color="warning", dismissable=True), ""
             
-        preview_limit = total if preview_limit_value == "all" else max(1, int(preview_limit_value or 20))
+        preview_limit = total if preview_limit_value == "all" else max(0, int(preview_limit_value or 20))
+        
+        if preview_limit == 0:
+            return dbc.Alert(f"{total} events are ready to download (preview turned off).", color="info", dismissable=True), ""
+            
         sample = [
             {"Type": "Teaching", "Date": logic.fmt_date(e["date"]), "Start": logic.fmt_time(e["start"]), "End": logic.fmt_time(e["end"]), "Subject": e["subject"], "Location": e["location"], "Modified SOC": "Yes" if e["modified_soc"] else ""}
             for e in events[:preview_limit]
