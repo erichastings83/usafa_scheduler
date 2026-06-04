@@ -267,7 +267,8 @@ def manage_course_rows(add_clicks, remove_clicks, clear_clicks, children):
     Output("upload-status", "children"), 
     Output("alert-container", "children", allow_duplicate=True),
     Input("calendar-upload", "contents"), 
-    State("calendar-upload", "filename")
+    State("calendar-upload", "filename"),
+    prevent_initial_call="initial_duplicate"
 )
 def upload_status(contents, filename):
     try:
