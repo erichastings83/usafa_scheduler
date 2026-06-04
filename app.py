@@ -15,6 +15,15 @@ app.title = "USAFA Teaching Schedule Generator"
 USAFA_NAVY = "#003B70"
 USAFA_BLUE = "#0076A8"
 
+try:
+    bundled_df = logic.parse_uploaded_csv(None)
+    _, _, full_range = logic.extract_schedule_days(bundled_df)
+    default_start = full_range[0] if full_range else None
+    default_end = full_range[1] if full_range else None
+except Exception:
+    default_start, default_end = None, None
+
+
 def make_course_row():
     uid = uuid.uuid4().hex
     return dbc.Card([
@@ -153,6 +162,20 @@ app.layout = html.Div([
                                     className="mb-1",
                                 ),
                                 html.Small("* Reminders for other relevant events are always turned off.", className="text-muted d-block mb-3"),
+                                html.Div([
+                                    dbc.Label("Filter Date Range", className="fw-bold mb-0 me-2", style={"color": USAFA_NAVY}),
+                                    dbc.Button("Reset", id="reset-dates-btn", color="secondary", outline=True, size="sm")
+                                ], className="d-flex align-items-center mb-2"),
+                                dcc.DatePickerRange(
+                                    id="date-filter",
+                                    start_date=default_start,
+                                    end_date=default_end,
+                                    min_date_allowed=default_start,
+                                    max_date_allowed=default_end,
+                                    display_format="MMM D, YYYY",
+                                    className="mb-3 d-block",
+                                    style={"maxWidth": "320px"},
+                                ),
                             ], md=6),
                             dbc.Col([
                                 dbc.Label("Reminder minutes before class", className="fw-bold", style={"color": USAFA_NAVY}),
@@ -166,6 +189,7 @@ app.layout = html.Div([
                                     className="mb-3", style={"maxWidth": "250px"}
                                 ),
                                 
+
                                 dbc.Checklist(
                                     id="private", 
                                     options=[{"label": " Mark appointments private", "value": "private"}], 
@@ -273,6 +297,10 @@ def manage_course_rows(add_clicks, remove_clicks, clear_clicks, children):
 @app.callback(
     Output("upload-status", "children"), 
     Output("alert-container", "children", allow_duplicate=True),
+    Output("date-filter", "start_date"),
+    Output("date-filter", "end_date"),
+    Output("date-filter", "min_date_allowed"),
+    Output("date-filter", "max_date_allowed"),
     Input("calendar-upload", "contents"), 
     State("calendar-upload", "filename"),
     prevent_initial_call="initial_duplicate"
@@ -285,22 +313,39 @@ def upload_status(contents, filename):
         
         date_range = ""
         if days:
-            start_date = days[0][0].strftime('%B %d, %Y')
-            end_date = days[-1][0].strftime('%B %d, %Y')
-            date_range = f" ({start_date} to {end_date})"
+            start_date_str = days[0][0].strftime('%B %d, %Y')
+            end_date_str = days[-1][0].strftime('%B %d, %Y')
+            date_range = f" ({start_date_str} to {end_date_str})"
             
         full_range_str = ""
+        start_d, end_d = None, None
         if full_range:
+            start_d, end_d = full_range[0], full_range[1]
             full_start = full_range[0].strftime('%B %d, %Y')
             full_end = full_range[1].strftime('%B %d, %Y')
             full_range_str = f" The full uploaded academic calendar spans {full_start} to {full_end}."
             
-        return f"Loaded {source}: found {len(days)} M/T class days{date_range} and {len(modified)} modified SOC day(s).{full_range_str}", None
+        return f"Loaded {source}: found {len(days)} M/T class days{date_range} and {len(modified)} modified SOC day(s).{full_range_str}", None, start_d, end_d, start_d, end_d
     except Exception as exc:
-        return "", dbc.Alert(f"Calendar problem: {exc}", color="danger", dismissable=True)
+        from dash import no_update
+        return "", dbc.Alert(f"Calendar problem: {exc}", color="danger", dismissable=True), no_update, no_update, no_update, no_update
 
-def make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values):
+def make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
     df = logic.parse_uploaded_csv(contents)
+    
+    if filter_start or filter_end:
+        start_d = logic.parse_date(filter_start) if filter_start else logic.date.min
+        end_d = logic.parse_date(filter_end) if filter_end else logic.date.max
+        valid_rows = []
+        for idx, row in df.iterrows():
+            try:
+                d = logic.parse_date(row.get("Start Date", ""))
+                if start_d <= d <= end_d:
+                    valid_rows.append(idx)
+            except Exception:
+                valid_rows.append(idx)
+        df = df.loc[valid_rows].copy()
+
     if academic_mode == "academic":
         return df, []
 
@@ -316,6 +361,12 @@ def make_events_from_state(contents, names, periods, locations, descriptions, ca
         busy_status=str(busy_status or "2"),
         private=("private" in (private_values or [])),
     ) if course_rows else []
+    
+    if filter_start or filter_end:
+        start_d = logic.parse_date(filter_start) if filter_start else logic.date.min
+        end_d = logic.parse_date(filter_end) if filter_end else logic.date.max
+        events = [e for e in events if start_d <= e["date"] <= end_d]
+        
     return df, events
 
 COURSE_STATES = [
@@ -335,11 +386,12 @@ COURSE_STATES = [
     State("academic-export-mode", "value"),
     State("preview-limit", "value"),
     State("reminder-on", "value"), State("reminder-minutes", "value"), State("busy-status", "value"), State("private", "value"),
+    State("date-filter", "start_date"), State("date-filter", "end_date"),
     prevent_initial_call=True,
 )
-def preview_events(_n_clicks, contents, names, periods, locations, descriptions, categories, academic_mode, preview_limit_value, reminder_value, reminder_minutes, busy_status, private_values):
+def preview_events(_n_clicks, contents, names, periods, locations, descriptions, categories, academic_mode, preview_limit_value, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
     try:
-        df, events = make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values)
+        df, events = make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end)
         academic_df = logic.filter_academic_rows(df, academic_mode)
         total = len(events) + len(academic_df)
         
@@ -415,10 +467,11 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
     *COURSE_STATES,
     State("academic-export-mode", "value"),
     State("reminder-on", "value"), State("reminder-minutes", "value"), State("busy-status", "value"), State("private", "value"),
+    State("date-filter", "start_date"), State("date-filter", "end_date"),
     prevent_initial_call=True,
 )
-def download_file(_n_ics, contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values):
-    df, events = make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values)
+def download_file(_n_ics, contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
+    df, events = make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end)
     return dict(content=logic.events_to_ics(events, df, academic_mode), filename="usafa_schedule.ics", type="text/calendar")
 
 @app.callback(
@@ -463,6 +516,20 @@ def validate_inputs(preview_clicks, download_clicks, names, periods, academic_mo
             period_styles.append(default_style)
             
     return name_invalids, period_styles
+
+@app.callback(
+    Output("date-filter", "start_date", allow_duplicate=True),
+    Output("date-filter", "end_date", allow_duplicate=True),
+    Input("reset-dates-btn", "n_clicks"),
+    State("date-filter", "min_date_allowed"),
+    State("date-filter", "max_date_allowed"),
+    prevent_initial_call=True
+)
+def reset_dates(n_clicks, min_date, max_date):
+    if n_clicks:
+        return min_date, max_date
+    from dash import no_update
+    return no_update, no_update
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "8050")), debug=False)

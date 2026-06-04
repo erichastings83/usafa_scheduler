@@ -205,6 +205,9 @@ def build_events(calendar_df, course_rows, reminder_on, reminder_minutes, busy_s
         if invalid:
             raise ValueError(f"Invalid period(s): {', '.join(invalid)}")
 
+        categories = course["categories"]
+
+
         for d, day_type, _day_number in schedule_days:
             for period in sorted(selected):
                 if period[0] != day_type:
@@ -223,7 +226,7 @@ def build_events(calendar_df, course_rows, reminder_on, reminder_minutes, busy_s
                     "subject": f"{course['course']} {period}",
                     "location": course["location"],
                     "description": "\n".join(desc_parts),
-                    "categories": course["categories"],
+                    "categories": categories,
                     "modified_soc": d in modified_dates,
                     "reminder_on": reminder_on,
                     "reminder_minutes": int(reminder_minutes or 0),
@@ -291,11 +294,12 @@ def events_to_outlook_csv(events, calendar_df=None, academic_mode="none"):
 
 
 def add_common_ics_lines(lines, subject, location, description, categories, show_time_as, private):
+    escaped_cats = ",".join(escape_ics(c.strip()) for c in str(categories).split(",") if c.strip())
     lines.extend([
         f"SUMMARY:{escape_ics(subject)}",
         f"LOCATION:{escape_ics(location)}",
         f"DESCRIPTION:{escape_ics(description)}",
-        f"CATEGORIES:{escape_ics(categories)}",
+        f"CATEGORIES:{escaped_cats}",
         "TRANSP:TRANSPARENT" if str(show_time_as) == "0" else "TRANSP:OPAQUE",
         "CLASS:PRIVATE" if private else "CLASS:PUBLIC",
     ])
