@@ -91,18 +91,12 @@ app.layout = html.Div([
                             multiple=False,
                         ),
                         html.A(
-                            [html.I(className="bi bi-file-earmark-pdf me-1"), "Need help? How to export your own DFR Calendar CSV"],
-                            href=app.get_asset_url("Linking_DFR_Calendar.pdf"),
+                            [html.I(className="bi bi-file-earmark-word me-1"), "Need help? ", html.U("Click here"), " to learn how to export your own DFR Calendar CSV"],
+                            href=app.get_asset_url("Generate a .csv Calendar.docx"),
                             target="_blank",
                             className="d-block mt-2 text-decoration-none small text-secondary text-center"
                         ),
                         html.Div(id="upload-status", className="mt-3 fw-bold text-success"),
-                        
-                        dbc.Alert([
-                            html.I(className="bi bi-exclamation-triangle-fill text-warning me-2"),
-                            html.Strong("Caution: "),
-                            "This program assumes any Modified SOC days move afternoon classes an hour earlier on that day. No other changes are made."
-                        ], color="light", className="mt-3 mb-0 border border-warning", style={"fontSize": "0.9rem"}),
                     ])
                 ], className="mb-4 shadow-sm"),
 
@@ -110,6 +104,12 @@ app.layout = html.Div([
                 dbc.Card([
                     dbc.CardHeader(html.H4("2. Add Courses", className="m-0", style={"color": USAFA_NAVY})),
                     dbc.CardBody([
+                        dbc.Alert([
+                            html.I(className="bi bi-exclamation-triangle-fill text-warning me-2"),
+                            html.Strong("Caution: "),
+                            "This program assumes any Modified SOC days move afternoon classes an hour earlier on that day. No other changes are made."
+                        ], color="light", className="mb-3 border border-warning", style={"fontSize": "0.9rem"}),
+                        
                         html.Div(id="course-rows", children=[make_course_row()]),
                         dbc.Row([
                             dbc.Col([

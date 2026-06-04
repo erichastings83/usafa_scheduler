@@ -125,15 +125,21 @@ def parse_uploaded_csv(contents: str | None = None) -> pd.DataFrame:
                 "Upload a USAFA Academic Calendar CSV to continue."
             )
         try:
-            return pd.read_csv(DEFAULT_CALENDAR_PATH, encoding="utf-8-sig")
+            df = pd.read_csv(DEFAULT_CALENDAR_PATH, encoding="utf-8-sig")
         except Exception as exc:
             raise ValueError("The bundled default academic calendar could not be read as a CSV.") from exc
-    try:
-        _, encoded = contents.split(",", 1)
-        decoded = base64.b64decode(encoded)
-        return pd.read_csv(io.BytesIO(decoded), encoding="utf-8-sig")
-    except Exception as exc:
-        raise ValueError("The uploaded replacement file could not be read as a CSV.") from exc
+    else:
+        try:
+            _, encoded = contents.split(",", 1)
+            decoded = base64.b64decode(encoded)
+            df = pd.read_csv(io.BytesIO(decoded), encoding="utf-8-sig")
+        except Exception as exc:
+            raise ValueError("The uploaded replacement file could not be read as a CSV.") from exc
+            
+    # Clean up column names to remove any accidental literal BOM characters
+    df.columns = [str(c).replace('ï»¿', '').replace('\ufeff', '').strip() for c in df.columns]
+    
+    return df
 
 
 def extract_schedule_days(calendar_df: pd.DataFrame):
@@ -147,7 +153,7 @@ def extract_schedule_days(calendar_df: pd.DataFrame):
     all_dates = []
 
     for _, row in calendar_df.iterrows():
-        subject = str(row.get("Subject", "")).strip()
+        subject = str(row.get("Subject", "")).replace('ï»¿', '').replace('\ufeff', '').strip()
         try:
             start_date = parse_date(row.get("Start Date", ""))
             all_dates.append(start_date)
@@ -304,7 +310,7 @@ def add_ics_alarm(lines, minutes_before, subject):
 
 
 def academic_row_to_ics(lines, row, now, timezone_name):
-    subject = clean_value(row.get("Subject", "")).strip()
+    subject = clean_value(row.get("Subject", "")).replace('ï»¿', '').replace('\ufeff', '').strip()
     if not subject:
         return
     start_date = parse_date(row.get("Start Date", ""))
