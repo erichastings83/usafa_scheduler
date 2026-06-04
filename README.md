@@ -1,25 +1,37 @@
-# USAFA Teaching Schedule Generator — Render Deployment Bundle v7
+# USAFA Teaching Schedule Generator
 
 This Dash app generates Outlook-compatible `.ics` and `.csv` files for USAFA teaching schedules.
 
-## v7 updates
+## Recent Updates
 
-- Added a preview-size dropdown with 10, 20, 50, 100, or all appointments.
-- The preview limit changes only the on-screen table; it does not remove appointments from downloads.
-- Bundles the Fall 2026 academic calendar as the default option.
-- Users can upload another USAFA Academic Calendar CSV to override the bundled default for their session.
-- Corrected the bundled CSV filename so the fallback file works after a fresh deployment.
+- **Preview Enhancements**: 
+  - Events in the preview table are now sorted strictly chronologically by Date.
+  - The "Type" column is color-coded for quick visual distinction between Teaching and Academic events.
+- **Improved UI and Validation**:
+  - Required fields (`*`) and `(Optional)` fields are now clearly marked in the Add Courses section.
+  - Missing required fields are instantly highlighted with a red border upon clicking preview/download.
+  - The "Periods" dropdown is expanded to show more options at once.
+  - Added contact information directly into the footer.
+- **Export Options**: 
+  - Added a new export mode to generate "Other relevant events only".
+  - Academic calendar events are now forced to show as "Free" in Outlook, preventing calendar block-outs. 
+  - Clarified that reminders for academic events are always disabled.
+- **Calendar Support**:
+  - Bundles the Fall 2026 academic calendar as the default option.
+  - Users can easily drag-and-drop a new USAFA Academic Calendar CSV to override the bundled default for their session.
 
 ## Repository structure
 
 ```text
 app.py
+logic.py
 requirements.txt
 Procfile
 render.yaml
 README.md
 data/
   Fall 26 - Academic Calendar.csv
+assets/
 ```
 
 ## Local run
