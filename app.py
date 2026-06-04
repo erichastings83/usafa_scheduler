@@ -138,8 +138,9 @@ app.layout = html.Div([
                                 dbc.RadioItems(
                                     id="academic-export-mode",
                                     options=[
-                                        {"label": " Teaching appointments + uploaded academic events", "value": "all"},
+                                        {"label": " Teaching appointments + other relevant events", "value": "all"},
                                         {"label": " Teaching appointments only", "value": "none"},
+                                        {"label": " Other relevant events only", "value": "academic"},
                                     ],
                                     value="all",
                                     className="mb-3",
@@ -149,8 +150,9 @@ app.layout = html.Div([
                                     id="reminder-on",
                                     options=[{"label": " No reminder", "value": "no"}, {"label": " Reminder", "value": "yes"}],
                                     value="no",
-                                    className="mb-3",
+                                    className="mb-1",
                                 ),
+                                html.Small("* Reminders for other relevant events are always turned off.", className="text-muted d-block mb-3"),
                             ], md=6),
                             dbc.Col([
                                 dbc.Label("Reminder minutes before class", className="fw-bold", style={"color": USAFA_NAVY}),
@@ -294,6 +296,9 @@ def upload_status(contents, filename):
 
 def make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values):
     df = logic.parse_uploaded_csv(contents)
+    if academic_mode == "academic":
+        return df, []
+
     course_rows = logic.assemble_course_rows(
         names, periods, locations, descriptions, categories,
         allow_empty=(academic_mode != "none"),
@@ -341,13 +346,27 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
         if preview_limit == 0:
             return dbc.Alert(f"{total} events are ready to download (preview turned off).", color="info", dismissable=True), ""
             
-        sample = [
-            {"Type": "Teaching", "Date": logic.fmt_date(e["date"]), "Start": logic.fmt_time(e["start"]), "End": logic.fmt_time(e["end"]), "Subject": e["subject"], "Location": e["location"], "Modified SOC Day": "Yes" if e["modified_soc"] else ""}
-            for e in events[:preview_limit]
-        ]
-        remaining = max(0, preview_limit - len(sample))
-        for _, row in academic_df.head(remaining).iterrows():
-            sample.append({
+        all_events = []
+        for e in events:
+            all_events.append({
+                "_sort_date": e["date"],
+                "Type": "Teaching", 
+                "Date": logic.fmt_date(e["date"]), 
+                "Start": logic.fmt_time(e["start"]), 
+                "End": logic.fmt_time(e["end"]), 
+                "Subject": e["subject"], 
+                "Location": e["location"], 
+                "Modified SOC Day": "Yes" if e["modified_soc"] else ""
+            })
+            
+        for _, row in academic_df.iterrows():
+            try:
+                sort_date = logic.parse_date(row.get("Start Date", ""))
+            except Exception:
+                sort_date = logic.date.max
+                
+            all_events.append({
+                "_sort_date": sort_date,
                 "Type": "Academic calendar",
                 "Date": logic.clean_value(row.get("Start Date", "")),
                 "Start": "All day" if logic.truthy(row.get("All day event", False)) else logic.clean_value(row.get("Start Time", "")),
@@ -356,6 +375,12 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
                 "Location": logic.clean_value(row.get("Location", "")),
                 "Modified SOC Day": "",
             })
+            
+        all_events.sort(key=lambda x: x["_sort_date"])
+        
+        sample = all_events[:preview_limit]
+        for item in sample:
+            item.pop("_sort_date", None)
             
         table = dash_table.DataTable(
             data=sample,

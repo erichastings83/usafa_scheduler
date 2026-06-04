@@ -240,7 +240,7 @@ def build_events(calendar_df, course_rows, reminder_on, reminder_minutes, busy_s
 def filter_academic_rows(calendar_df: pd.DataFrame, academic_mode: str):
     if academic_mode == "none":
         return calendar_df.iloc[0:0].copy()
-    if academic_mode == "all":
+    if academic_mode in ("all", "academic"):
         return calendar_df.copy()
     raise ValueError(f"Unknown academic calendar export mode: {academic_mode!r}")
 
