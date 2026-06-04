@@ -273,7 +273,9 @@ def teaching_event_to_csv_row(e):
 
 
 def academic_row_to_csv_row(row):
-    return {header: clean_value(row.get(header, "")) for header in OUTLOOK_HEADERS}
+    res = {header: clean_value(row.get(header, "")) for header in OUTLOOK_HEADERS}
+    res["Show time as"] = "0"
+    return res
 
 
 def events_to_outlook_csv(events, calendar_df=None, academic_mode="none"):
@@ -319,7 +321,7 @@ def academic_row_to_ics(lines, row, now, timezone_name):
     location = clean_value(row.get("Location", ""))
     description = clean_value(row.get("Description", ""))
     categories = clean_value(row.get("Categories", ""))
-    show_time_as = clean_value(row.get("Show time as", "2")) or "2"
+    show_time_as = "0"
     private = truthy(row.get("Private", False))
     uid_src = f"academic|{subject}|{start_date}|{clean_value(row.get('Start Time', ''))}|{location}"
     uid = hashlib.sha1(uid_src.encode()).hexdigest() + "@usafa-scheduler"
