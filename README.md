@@ -27,8 +27,6 @@ This Dash app generates Outlook-compatible `.ics` files for USAFA teaching sched
 app.py
 logic.py
 requirements.txt
-Procfile
-render.yaml
 README.md
 data/
   Fall 26 - Academic Calendar.csv
@@ -43,12 +41,3 @@ python app.py
 ```
 
 Open `http://127.0.0.1:8050/`.
-
-## Render deployment
-
-Create a Render web service connected to the GitHub repository. The included `render.yaml` uses:
-
-```text
-pip install -r requirements.txt
-gunicorn app:server --bind 0.0.0.0:$PORT
-```

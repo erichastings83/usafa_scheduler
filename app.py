@@ -531,5 +531,8 @@ def reset_dates(n_clicks, min_date, max_date):
     from dash import no_update
     return no_update, no_update
 
+# Expose the WSGI app for Vercel deployment
+app = server
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "8050")), debug=False)
