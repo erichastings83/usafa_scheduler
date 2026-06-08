@@ -15,10 +15,7 @@ DEFAULT_CALENDAR_FILENAME = "Fall 26 - Academic Calendar.csv"
 DEFAULT_CALENDAR_PATH = APP_DIR / "data" / DEFAULT_CALENDAR_FILENAME
 
 def get_bundled_calendar_date() -> str:
-    if DEFAULT_CALENDAR_PATH.exists():
-        mtime = DEFAULT_CALENDAR_PATH.stat().st_mtime
-        return datetime.fromtimestamp(mtime).strftime("%B %d, %Y")
-    return "Unknown date"
+    return "June 4, 2026"
 
 NORMAL_PERIOD_TIMES = {
     "1": (time(7, 30), time(8, 23)),
