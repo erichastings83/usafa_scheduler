@@ -258,13 +258,16 @@ app.layout = html.Div([
                                 dbc.Card([
                                     dbc.CardHeader(html.Strong([html.I(className="bi bi-globe me-2 text-success"), "New Outlook / Web"])),
                                     dbc.CardBody([
-                                        html.P("The new Outlook directly merges imports. Consider making a test calendar first.", className="small text-muted mb-2"),
+                                        html.P("The new Outlook directly merges imports. To review safely:", className="small text-muted mb-2"),
                                         html.Ol([
-                                            html.Li(["Open the ", html.Strong("Calendar"), " view (calendar icon on the far left)."]),
-                                            html.Li(["In the left navigation pane, click ", html.Strong("Add calendar"), "."]),
-                                            html.Li(["Select ", html.Strong("Upload from file"), " in the menu."]),
-                                            html.Li(["Browse for the downloaded ", html.Strong(".ics"), " file."]),
-                                            html.Li(["Choose which calendar to import into and click ", html.Strong("Import"), "."])
+                                            html.Li(["Open the ", html.Strong("Calendar"), " view (calendar icon)."]),
+                                            html.Li(["Click ", html.Strong("Add calendar"), " in the navigation pane."]),
+                                            html.Li([
+                                                html.Strong("Optional: ", className="text-success"),
+                                                "Click ", html.Strong("Create blank calendar"), " to make a temporary 'Test' calendar."
+                                            ]),
+                                            html.Li(["Select ", html.Strong("Upload from file"), " and browse for the downloaded ", html.Strong(".ics"), " file."]),
+                                            html.Li(["Under 'Select a calendar', choose your test calendar (or main calendar) and click ", html.Strong("Import"), "."])
                                         ], className="mb-0 small")
                                     ])
                                 ], className="h-100 border-success")
