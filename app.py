@@ -233,23 +233,43 @@ app.layout = html.Div([
                         html.Div(id="alert-container", className="mt-3"),
                         html.Div(id="preview-table", className="mt-3"),
                         
-                        dbc.Card([
-                            dbc.CardHeader(html.Strong([html.I(className="bi bi-lightbulb text-warning me-2"), "Quick Guide: Importing to Outlook Safely"])),
-                            dbc.CardBody([
-                                html.P("We highly recommend reviewing the appointments in a separate calendar before merging them into your primary schedule."),
-                                html.Ol([
-                                    html.Li(["In Outlook, go to ", html.Strong("File > Open & Export > Import/Export"), "."]),
-                                    html.Li(["Select ", html.Strong("Import an iCalendar (.ics) or vCalendar file (.vcs)"), " and click Next."]),
-                                    html.Li(["Locate the file you just downloaded and click OK."]),
-                                    html.Li([
-                                        "When prompted, select ", 
-                                        html.Strong("Open as New", style={"color": USAFA_BLUE}), 
-                                        " (", html.Em("do not"), " click Import yet). This creates a temporary side-by-side calendar."
-                                    ]),
-                                    html.Li(["Review the dates and times for any errors. If everything looks correct, you can repeat the process and choose ", html.Strong("Import"), " to merge it with your main calendar."])
-                                ], className="mb-0")
-                            ])
-                        ], className="mt-4 border-info"),
+                        dbc.Row([
+                            dbc.Col([
+                                dbc.Card([
+                                    dbc.CardHeader(html.Strong([html.I(className="bi bi-windows me-2 text-primary"), "Classic Outlook"])),
+                                    dbc.CardBody([
+                                        html.P("We highly recommend reviewing the appointments in a separate calendar before merging.", className="small text-muted mb-2"),
+                                        html.Ol([
+                                            html.Li(["Go to ", html.Strong("File > Open & Export > Import/Export"), "."]),
+                                            html.Li(["Select ", html.Strong("Import an iCalendar (.ics)"), " and click Next."]),
+                                            html.Li(["Locate the downloaded file and click OK."]),
+                                            html.Li([
+                                                "Select ", 
+                                                html.Strong("Open as New", style={"color": USAFA_BLUE}), 
+                                                " to create a temporary side-by-side calendar."
+                                            ]),
+                                            html.Li(["Review dates. If correct, repeat the process and choose ", html.Strong("Import"), " to merge."])
+                                        ], className="mb-0 small")
+                                    ])
+                                ], className="h-100 border-info")
+                            ], md=6, className="mb-3 mb-md-0"),
+                            
+                            dbc.Col([
+                                dbc.Card([
+                                    dbc.CardHeader(html.Strong([html.I(className="bi bi-globe me-2 text-success"), "New Outlook / Web"])),
+                                    dbc.CardBody([
+                                        html.P("The new Outlook directly merges imports. Consider making a test calendar first.", className="small text-muted mb-2"),
+                                        html.Ol([
+                                            html.Li(["Open the ", html.Strong("Calendar"), " view (calendar icon on the far left)."]),
+                                            html.Li(["In the left navigation pane, click ", html.Strong("Add calendar"), "."]),
+                                            html.Li(["Select ", html.Strong("Upload from file"), " in the menu."]),
+                                            html.Li(["Browse for the downloaded ", html.Strong(".ics"), " file."]),
+                                            html.Li(["Choose which calendar to import into and click ", html.Strong("Import"), "."])
+                                        ], className="mb-0 small")
+                                    ])
+                                ], className="h-100 border-success")
+                            ], md=6)
+                        ], className="mt-4"),
 
                         html.Div([
                             html.Small([
