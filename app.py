@@ -7,7 +7,14 @@ import dash_bootstrap_components as dbc
 
 import logic
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
+app = Dash(
+    __name__, 
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    external_scripts=[
+        {'src': 'https://cdn.vercel-insights.com/v1/script.js', 'defer': True}
+    ],
+    suppress_callback_exceptions=True
+)
 server = app.server
 app.title = "USAFA Teaching Schedule Generator"
 
