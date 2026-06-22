@@ -75,6 +75,11 @@ app.layout = html.Div([
     ], style={"backgroundColor": USAFA_NAVY, "borderBottom": f"6px solid {USAFA_BLUE}"}),
 
     dbc.Container([
+        dbc.Alert([
+            html.I(className="bi bi-exclamation-triangle-fill me-2"),
+            html.Strong("Assumption: "),
+            "This scheduler currently assumes classes will start at the same times as in AY25-26."
+        ], color="warning", className="mb-4 shadow-sm"),
         dbc.Row([
             dbc.Col([
                 # Card 1: Academic Calendar
