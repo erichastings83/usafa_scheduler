@@ -114,6 +114,35 @@ def escape_ics(text: str) -> str:
     )
 
 
+def fold_ics_line(line: str) -> str:
+    """Fold a single ICS content line at 75 octets per RFC 5545 §3.1.
+    
+    Lines longer than 75 bytes are split with CRLF followed by a single
+    space character on the continuation line.
+    """
+    encoded = line.encode("utf-8")
+    if len(encoded) <= 75:
+        return line
+    parts = []
+    while len(encoded) > 0:
+        # First line: 75 octets; continuation lines: 74 octets (space prefix counts as 1)
+        limit = 75 if not parts else 74
+        if len(encoded) <= limit:
+            parts.append(encoded.decode("utf-8"))
+            break
+        # Try to split at `limit` bytes; back off if we'd split a multi-byte char
+        cut = limit
+        while cut > 0:
+            try:
+                encoded[:cut].decode("utf-8")
+                break
+            except UnicodeDecodeError:
+                cut -= 1
+        parts.append(encoded[:cut].decode("utf-8"))
+        encoded = encoded[cut:]
+    return ("\r\n ".join(parts))
+
+
 def parse_uploaded_csv(contents: str | None = None) -> pd.DataFrame:
     if not contents:
         if not DEFAULT_CALENDAR_PATH.exists():
@@ -308,6 +337,7 @@ def add_common_ics_lines(lines, subject, location, description, categories, show
         f"CATEGORIES:{escaped_cats}",
         "TRANSP:TRANSPARENT" if str(show_time_as) == "0" else "TRANSP:OPAQUE",
         f"X-MICROSOFT-CDO-BUSYSTATUS:{ms_status}",
+        f"X-MICROSOFT-CDO-INTENDEDSTATUS:{ms_status}",
         "CLASS:PRIVATE" if private else "CLASS:PUBLIC",
     ])
 
@@ -387,4 +417,5 @@ def events_to_ics(events, calendar_df=None, academic_mode="none", timezone_name=
         for _, row in filter_academic_rows(calendar_df, academic_mode).iterrows():
             academic_row_to_ics(lines, row, now, timezone_name)
     lines.append("END:VCALENDAR")
-    return "\r\n".join(lines) + "\r\n"
+    folded = [fold_ics_line(line) for line in lines]
+    return "\r\n".join(folded) + "\r\n"

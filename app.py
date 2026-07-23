@@ -198,7 +198,7 @@ app.layout = html.Div([
                                     value="2", 
                                     className="mb-3", style={"maxWidth": "250px"}
                                 ),
-                                
+                                html.Small("* Applies to teaching appointments only. Other relevant events are always Free.", className="text-muted d-block mb-3"),
 
                                 dbc.Checklist(
                                     id="private", 
@@ -437,7 +437,9 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
             return dbc.Alert(f"{total} events are ready to download (preview turned off).", color="info", dismissable=True), ""
             
         all_events = []
+        busy_status_labels = {"0": "Free", "1": "Tentative", "2": "Busy", "3": "Out of Office"}
         for e in events:
+            reminder_text = f"{e['reminder_minutes']} min before" if e["reminder_on"] else "Off"
             all_events.append({
                 "_sort_date": e["date"],
                 "Type": "Teaching", 
@@ -446,6 +448,8 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
                 "End": logic.fmt_time(e["end"]), 
                 "Subject": e["subject"], 
                 "Location": e["location"], 
+                "Show As": busy_status_labels.get(str(e["show_time_as"]), "Busy"),
+                "Reminder": reminder_text,
                 "Modified SOC Day": "Yes" if e["modified_soc"] else ""
             })
             
@@ -463,6 +467,8 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
                 "End": logic.clean_value(row.get("End Date", "")) if logic.truthy(row.get("All day event", False)) else logic.clean_value(row.get("End Time", "")),
                 "Subject": logic.clean_value(row.get("Subject", "")),
                 "Location": logic.clean_value(row.get("Location", "")),
+                "Show As": "Free",
+                "Reminder": "Off",
                 "Modified SOC Day": "",
             })
             
