@@ -9,7 +9,7 @@ import logic
 
 app = Dash(
     __name__, 
-    external_stylesheets=[dbc.themes.BOOTSTRAP], 
+    external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP], 
     external_scripts=[{"src": "/_vercel/insights/script.js", "defer": True}],
     suppress_callback_exceptions=True
 )
@@ -268,6 +268,10 @@ app.layout = html.Div([
                                 dbc.Card([
                                     dbc.CardHeader(html.Strong([html.I(className="bi bi-globe me-2 text-success"), "New Outlook / Web"])),
                                     dbc.CardBody([
+                                        html.P([
+                                            html.I(className="bi bi-exclamation-triangle-fill me-1 text-warning"),
+                                            "This tool has been primarily tested using Classic Outlook. Only limited testing has been performed with New Outlook although it should work as intended."
+                                        ], className="small text-muted mb-3"),
                                         html.P("The new Outlook directly merges imports. To review safely:", className="small text-muted mb-2"),
                                         html.Ol([
                                             html.Li(["Open the ", html.Strong("Calendar"), " view (calendar icon)."]),
