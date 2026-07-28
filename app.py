@@ -89,7 +89,7 @@ app.layout = html.Div([
                         dbc.Alert([
                             html.I(className="bi bi-check-circle-fill me-2"),
                             html.Strong("Fall 2026 USAFA Academic Calendar"), 
-                            f" sourced from the DF Registrar (current as of {logic.get_bundled_calendar_date()}) is already loaded and ready to use."
+                            f" sourced from the DF Registrar (current as of {logic.get_bundled_calendar_date()}) is already loaded and ready to use. This calendar is still current as of July 28, 2026."
                         ], color="success", className="mb-3 py-2"),
                         html.P("If you are scheduling for a different semester, you can upload a replacement CSV below. Otherwise, you can skip to Step 2.", className="text-muted mb-2"),
                         dcc.Upload(
@@ -157,12 +157,34 @@ app.layout = html.Div([
                                 dbc.RadioItems(
                                     id="academic-export-mode",
                                     options=[
-                                        {"label": " Teaching appointments + other relevant events", "value": "all"},
+                                        {
+                                            "label": html.Span([
+                                                " Teaching appointments + other relevant events ",
+                                                html.I(className="bi bi-info-circle text-muted", id="info-relevant-1", style={"cursor": "help"})
+                                            ]), 
+                                            "value": "all"
+                                        },
                                         {"label": " Teaching appointments only", "value": "none"},
-                                        {"label": " Other relevant events only", "value": "academic"},
+                                        {
+                                            "label": html.Span([
+                                                " Other relevant events only ",
+                                                html.I(className="bi bi-info-circle text-muted", id="info-relevant-2", style={"cursor": "help"})
+                                            ]), 
+                                            "value": "academic"
+                                        },
                                     ],
                                     value="all",
                                     className="mb-3",
+                                ),
+                                dbc.Tooltip(
+                                    "Other relevant events include M and T Days, significiant Cadet Wing events, Modified SOC days, Silver Training Weekends, etc. Use the Preview button to see more.",
+                                    target="info-relevant-1",
+                                    placement="right",
+                                ),
+                                dbc.Tooltip(
+                                    "Other relevant events include M and T Days, significiant Cadet Wing events, Modified SOC days, Silver Training Weekends, etc. Use the Preview button to see more.",
+                                    target="info-relevant-2",
+                                    placement="right",
                                 ),
                                 dbc.Label("Reminder for teaching appointments", className="fw-bold", style={"color": USAFA_NAVY}),
                                 dbc.RadioItems(
@@ -246,9 +268,13 @@ app.layout = html.Div([
                         dbc.Row([
                             dbc.Col([
                                 dbc.Card([
-                                    dbc.CardHeader(html.Strong([html.I(className="bi bi-windows me-2 text-primary"), "Classic Outlook"])),
+                                    dbc.CardHeader(html.Strong([html.I(className="bi bi-windows me-2 text-primary"), "Classic Outlook Instructions"])),
                                     dbc.CardBody([
-                                        html.P("We highly recommend reviewing the appointments in a separate calendar before merging.", className="small text-muted mb-2"),
+                                        html.Div([
+                                            html.I(className="bi bi-info-circle-fill me-2"),
+                                            html.Strong("Highly Recommended: "),
+                                            "Review appointments in a temporary calendar first to prevent accidental duplicates."
+                                        ], className="small alert alert-info py-2 mb-3"),
                                         html.Ol([
                                             html.Li(["Go to ", html.Strong("File > Open & Export > Import/Export"), "."]),
                                             html.Li(["Select ", html.Strong("Import an iCalendar (.ics)"), " and click Next."]),
@@ -256,7 +282,9 @@ app.layout = html.Div([
                                             html.Li([
                                                 "Select ", 
                                                 html.Strong("Open as New", style={"color": USAFA_BLUE}), 
-                                                " to create a temporary side-by-side calendar."
+                                                " to create a ",
+                                                html.U(html.Strong("temporary")),
+                                                " side-by-side calendar."
                                             ]),
                                             html.Li(["Review dates. If correct, repeat the process and choose ", html.Strong("Import"), " to merge."])
                                         ], className="mb-0 small")
@@ -266,19 +294,25 @@ app.layout = html.Div([
                             
                             dbc.Col([
                                 dbc.Card([
-                                    dbc.CardHeader(html.Strong([html.I(className="bi bi-globe me-2 text-success"), "New Outlook / Web"])),
+                                    dbc.CardHeader(html.Strong([html.I(className="bi bi-globe me-2 text-success"), "New Outlook / Web Instructions"])),
                                     dbc.CardBody([
                                         html.P([
                                             html.I(className="bi bi-exclamation-triangle-fill me-1 text-warning"),
                                             "This tool has been primarily tested using Classic Outlook. Only limited testing has been performed with New Outlook although it should work as intended."
                                         ], className="small text-muted mb-3"),
-                                        html.P("The new Outlook directly merges imports. To review safely:", className="small text-muted mb-2"),
+                                        html.Div([
+                                            html.I(className="bi bi-info-circle-fill me-2"),
+                                            html.Strong("Highly Recommended: "),
+                                            "New Outlook directly merges imports. Create a temporary calendar first to prevent accidental duplicates."
+                                        ], className="small alert alert-info py-2 mb-3"),
                                         html.Ol([
                                             html.Li(["Open the ", html.Strong("Calendar"), " view (calendar icon)."]),
                                             html.Li(["Click ", html.Strong("Add calendar"), " in the navigation pane."]),
                                             html.Li([
-                                                html.Strong("Optional: ", className="text-success"),
-                                                "Click ", html.Strong("Create blank calendar"), " to make a temporary 'Test' calendar."
+                                                html.Strong("Recommended: ", className="text-primary"),
+                                                "Click ", html.Strong("Create blank calendar"), " to make a ",
+                                                html.U(html.Strong("temporary")),
+                                                " 'Test' calendar."
                                             ]),
                                             html.Li(["Select ", html.Strong("Upload from file"), " and browse for the downloaded ", html.Strong(".ics"), " file."]),
                                             html.Li(["Under 'Select a calendar', choose your test calendar (or main calendar) and click ", html.Strong("Import"), "."])
