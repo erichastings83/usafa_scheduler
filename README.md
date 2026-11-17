@@ -18,7 +18,7 @@ This Dash app generates Outlook-compatible `.ics` files for USAFA teaching sched
   - Academic calendar events are now forced to show as "Free" in Outlook, preventing calendar block-outs. 
   - Clarified that reminders for academic events are always disabled.
 - **Calendar Support**:
-  - Bundles the Fall 2026 academic calendar as the default option.
+  - Bundles the Spring 2027 academic calendar as the default option, with a toggle to revert to the Fall 2026 academic calendar.
   - Users can easily drag-and-drop a new USAFA Academic Calendar CSV to override the bundled default for their session.
 
 ## Repository structure
@@ -29,6 +29,7 @@ logic.py
 requirements.txt
 README.md
 data/
+  Spring 27 - Academic Calendar.csv
   Fall 26 - Academic Calendar.csv
 assets/
 ```

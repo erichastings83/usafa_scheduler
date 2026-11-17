@@ -11,11 +11,41 @@ from typing import Any
 import pandas as pd
 
 APP_DIR = Path(__file__).resolve().parent
-DEFAULT_CALENDAR_FILENAME = "Fall 26 - Academic Calendar.csv"
+DEFAULT_CALENDAR_KEY = "spring27"
+
+BUNDLED_CALENDARS = {
+    "spring27": {
+        "label": "Spring 2027 (Default)",
+        "name": "Spring 2027 USAFA Academic Calendar",
+        "filename": "Spring 27 - Academic Calendar.csv",
+        "as_of": "November 17, 2026",
+    },
+    "fall26": {
+        "label": "Fall 2026",
+        "name": "Fall 2026 USAFA Academic Calendar",
+        "filename": "Fall 26 - Academic Calendar.csv",
+        "as_of": "June 4, 2026",
+    },
+}
+
+DEFAULT_CALENDAR_FILENAME = BUNDLED_CALENDARS[DEFAULT_CALENDAR_KEY]["filename"]
 DEFAULT_CALENDAR_PATH = APP_DIR / "data" / DEFAULT_CALENDAR_FILENAME
 
-def get_bundled_calendar_date() -> str:
-    return "June 4, 2026"
+
+def get_bundled_calendar_info(calendar_key: str | None = None) -> dict[str, str]:
+    key = calendar_key or DEFAULT_CALENDAR_KEY
+    if key not in BUNDLED_CALENDARS:
+        raise ValueError(f"Unknown bundled calendar: {key!r}")
+    return BUNDLED_CALENDARS[key]
+
+
+def get_bundled_calendar_path(calendar_key: str | None = None) -> Path:
+    info = get_bundled_calendar_info(calendar_key)
+    return APP_DIR / "data" / info["filename"]
+
+
+def get_bundled_calendar_date(calendar_key: str | None = None) -> str:
+    return get_bundled_calendar_info(calendar_key)["as_of"]
 
 NORMAL_PERIOD_TIMES = {
     "1": (time(7, 30), time(8, 23)),
@@ -143,17 +173,18 @@ def fold_ics_line(line: str) -> str:
     return ("\r\n ".join(parts))
 
 
-def parse_uploaded_csv(contents: str | None = None) -> pd.DataFrame:
+def parse_uploaded_csv(contents: str | None = None, calendar_key: str | None = None) -> pd.DataFrame:
     if not contents:
-        if not DEFAULT_CALENDAR_PATH.exists():
+        calendar_path = get_bundled_calendar_path(calendar_key)
+        if not calendar_path.exists():
             raise ValueError(
-                f"The bundled default calendar was not found at {DEFAULT_CALENDAR_PATH}. "
+                f"The bundled academic calendar was not found at {calendar_path}. "
                 "Upload a USAFA Academic Calendar CSV to continue."
             )
         try:
-            df = pd.read_csv(DEFAULT_CALENDAR_PATH, encoding="utf-8-sig")
+            df = pd.read_csv(calendar_path, encoding="utf-8-sig")
         except Exception as exc:
-            raise ValueError("The bundled default academic calendar could not be read as a CSV.") from exc
+            raise ValueError("The bundled academic calendar could not be read as a CSV.") from exc
     else:
         try:
             _, encoded = contents.split(",", 1)

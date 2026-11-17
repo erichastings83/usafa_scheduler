@@ -29,6 +29,22 @@ except Exception:
     default_start, default_end = None, None
 
 
+def make_calendar_alert(calendar_key: str | None = None, custom_filename: str | None = None):
+    if custom_filename:
+        return dbc.Alert([
+            html.I(className="bi bi-file-earmark-check-fill me-2"),
+            html.Strong(f"Custom CSV active: {custom_filename}"),
+            " — Select Spring 2027 or Fall 2026 above to switch back to a bundled calendar."
+        ], color="info", className="mb-3 py-2")
+
+    info = logic.get_bundled_calendar_info(calendar_key)
+    return dbc.Alert([
+        html.I(className="bi bi-check-circle-fill me-2"),
+        html.Strong(info["name"]),
+        f" sourced from the DF Registrar (current as of {info['as_of']}) is loaded and ready to use."
+    ], color="success", className="mb-3 py-2")
+
+
 def make_course_row():
     uid = uuid.uuid4().hex
     return dbc.Card([
@@ -86,12 +102,22 @@ app.layout = html.Div([
                 dbc.Card([
                     dbc.CardHeader(html.H4("1. Academic Calendar", className="m-0", style={"color": USAFA_NAVY})),
                     dbc.CardBody([
-                        dbc.Alert([
-                            html.I(className="bi bi-check-circle-fill me-2"),
-                            html.Strong("Fall 2026 USAFA Academic Calendar"), 
-                            f" sourced from the DF Registrar (current as of {logic.get_bundled_calendar_date()}) is already loaded and ready to use. This calendar is still current as of July 28, 2026."
-                        ], color="success", className="mb-3 py-2"),
-                        html.P("If you are scheduling for a different semester, you can upload a replacement CSV below. Otherwise, you can skip to Step 2.", className="text-muted mb-2"),
+                        dbc.Label("Bundled Academic Calendar", className="fw-bold mb-1", style={"color": USAFA_NAVY}),
+                        dbc.RadioItems(
+                            id="bundled-calendar-select",
+                            options=[
+                                {"label": f" {info['label']}", "value": key}
+                                for key, info in logic.BUNDLED_CALENDARS.items()
+                            ],
+                            value=logic.DEFAULT_CALENDAR_KEY,
+                            inline=True,
+                            className="mb-3",
+                        ),
+                        html.Div(
+                            id="bundled-calendar-alert",
+                            children=make_calendar_alert(logic.DEFAULT_CALENDAR_KEY),
+                        ),
+                        html.P("If you are scheduling for a different semester, select Fall 2026 above or upload a replacement CSV below. Otherwise, you can skip to Step 2.", className="text-muted mb-2"),
                         dcc.Upload(
                             id="calendar-upload",
                             children=html.Div([
@@ -366,43 +392,64 @@ def manage_course_rows(add_clicks, remove_clicks, clear_clicks, children):
     return children
 
 @app.callback(
-    Output("upload-status", "children"), 
+    Output("upload-status", "children"),
+    Output("bundled-calendar-alert", "children"),
+    Output("calendar-upload", "contents"),
     Output("alert-container", "children", allow_duplicate=True),
     Output("date-filter", "start_date"),
     Output("date-filter", "end_date"),
     Output("date-filter", "min_date_allowed"),
     Output("date-filter", "max_date_allowed"),
-    Input("calendar-upload", "contents"), 
+    Input("bundled-calendar-select", "value"),
+    Input("calendar-upload", "contents"),
     State("calendar-upload", "filename"),
     prevent_initial_call="initial_duplicate"
 )
-def upload_status(contents, filename):
+def upload_status(calendar_key, contents, filename):
+    from dash import no_update
+
+    triggered = ctx.triggered_id
+    clear_upload = no_update
+    effective_contents = contents
+
+    if triggered == "bundled-calendar-select":
+        effective_contents = None
+        if contents is not None:
+            clear_upload = None
+
     try:
-        df = logic.parse_uploaded_csv(contents)
+        df = logic.parse_uploaded_csv(effective_contents, calendar_key=calendar_key)
         days, modified, full_range = logic.extract_schedule_days(df)
-        source = filename if contents else f"bundled default: {logic.DEFAULT_CALENDAR_FILENAME}"
-        
+
+        if effective_contents:
+            source = filename or "uploaded CSV"
+            calendar_alert = make_calendar_alert(calendar_key, custom_filename=source)
+        else:
+            info = logic.get_bundled_calendar_info(calendar_key)
+            source = f"bundled calendar: {info['filename']}"
+            calendar_alert = make_calendar_alert(calendar_key)
+
         date_range = ""
         if days:
             start_date_str = days[0][0].strftime('%B %d, %Y')
             end_date_str = days[-1][0].strftime('%B %d, %Y')
             date_range = f" ({start_date_str} to {end_date_str})"
-            
+
         full_range_str = ""
         start_d, end_d = None, None
         if full_range:
             start_d, end_d = full_range[0], full_range[1]
             full_start = full_range[0].strftime('%B %d, %Y')
             full_end = full_range[1].strftime('%B %d, %Y')
-            full_range_str = f" The full uploaded academic calendar spans {full_start} to {full_end}."
-            
-        return f"Loaded {source}: found {len(days)} M/T class days{date_range} and {len(modified)} modified SOC day(s).{full_range_str}", None, start_d, end_d, start_d, end_d
-    except Exception as exc:
-        from dash import no_update
-        return "", dbc.Alert(f"Calendar problem: {exc}", color="danger", dismissable=True), no_update, no_update, no_update, no_update
+            full_range_str = f" The full academic calendar spans {full_start} to {full_end}."
 
-def make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
-    df = logic.parse_uploaded_csv(contents)
+        status_msg = f"Loaded {source}: found {len(days)} M/T class days{date_range} and {len(modified)} modified SOC day(s).{full_range_str}"
+        return status_msg, calendar_alert, clear_upload, None, start_d, end_d, start_d, end_d
+    except Exception as exc:
+        return "", no_update, clear_upload, dbc.Alert(f"Calendar problem: {exc}", color="danger", dismissable=True), no_update, no_update, no_update, no_update
+
+def make_events_from_state(contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
+    df = logic.parse_uploaded_csv(contents, calendar_key=calendar_key)
     
     if filter_start or filter_end:
         start_d = logic.parse_date(filter_start) if filter_start else logic.date.min
@@ -453,6 +500,7 @@ COURSE_STATES = [
     Output("preview-table", "children"),
     Input("preview", "n_clicks"),
     State("calendar-upload", "contents"),
+    State("bundled-calendar-select", "value"),
     *COURSE_STATES,
     State("academic-export-mode", "value"),
     State("preview-limit", "value"),
@@ -460,9 +508,9 @@ COURSE_STATES = [
     State("date-filter", "start_date"), State("date-filter", "end_date"),
     prevent_initial_call=True,
 )
-def preview_events(_n_clicks, contents, names, periods, locations, descriptions, categories, academic_mode, preview_limit_value, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
+def preview_events(_n_clicks, contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, preview_limit_value, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
     try:
-        df, events = make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end)
+        df, events = make_events_from_state(contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end)
         academic_df = logic.filter_academic_rows(df, academic_mode)
         total = len(events) + len(academic_df)
         
@@ -541,14 +589,15 @@ def preview_events(_n_clicks, contents, names, periods, locations, descriptions,
     Output("download", "data"),
     Input("download-ics", "n_clicks"),
     State("calendar-upload", "contents"),
+    State("bundled-calendar-select", "value"),
     *COURSE_STATES,
     State("academic-export-mode", "value"),
     State("reminder-on", "value"), State("reminder-minutes", "value"), State("busy-status", "value"), State("private", "value"),
     State("date-filter", "start_date"), State("date-filter", "end_date"),
     prevent_initial_call=True,
 )
-def download_file(_n_ics, contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
-    df, events = make_events_from_state(contents, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end)
+def download_file(_n_ics, contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
+    df, events = make_events_from_state(contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end)
     return dict(content=logic.events_to_ics(events, df, academic_mode), filename="usafa_schedule.ics", type="text/calendar")
 
 @app.callback(

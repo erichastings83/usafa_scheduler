@@ -567,6 +567,34 @@ class TestEdgeCases:
                 )
 
 
+class TestBundledCalendars:
+
+    def test_default_is_spring27(self):
+        assert logic.DEFAULT_CALENDAR_KEY == "spring27"
+        assert logic.DEFAULT_CALENDAR_FILENAME == "Spring 27 - Academic Calendar.csv"
+        df = logic.parse_uploaded_csv(None)
+        days, modified, full_range = logic.extract_schedule_days(df)
+        assert len(days) == 82
+        assert days[0][0] == date(2027, 1, 6)
+        assert days[-1][0] == date(2027, 5, 14)
+        assert len(modified) == 5
+        assert full_range == (date(2027, 1, 6), date(2027, 6, 5))
+
+    def test_fall26_fallback_option(self):
+        df = logic.parse_uploaded_csv(None, calendar_key="fall26")
+        days, modified, full_range = logic.extract_schedule_days(df)
+        assert len(days) == 82
+        assert days[0][0] == date(2026, 8, 6)
+        assert days[-1][0] == date(2026, 12, 10)
+        assert len(modified) == 6
+        assert full_range == (date(2026, 7, 30), date(2027, 1, 4))
+
+    def test_unknown_bundled_calendar_raises(self):
+        import pytest
+        with pytest.raises(ValueError, match="Unknown bundled calendar"):
+            logic.parse_uploaded_csv(None, calendar_key="unknown")
+
+
 # ---------------------------------------------------------------------------
 # Run with pytest
 # ---------------------------------------------------------------------------
