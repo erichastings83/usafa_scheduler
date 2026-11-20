@@ -111,6 +111,8 @@ app.layout = html.Div([
                             ],
                             value=logic.DEFAULT_CALENDAR_KEY,
                             inline=True,
+                            persistence=True,
+                            persistence_type="session",
                             className="mb-3",
                         ),
                         html.Div(
@@ -200,15 +202,17 @@ app.layout = html.Div([
                                         },
                                     ],
                                     value="all",
+                                    persistence=True,
+                                    persistence_type="session",
                                     className="mb-3",
                                 ),
                                 dbc.Tooltip(
-                                    "Other relevant events include M and T Days, significiant Cadet Wing events, Modified SOC days, Silver Training Weekends, etc. Use the Preview button to see more.",
+                                    "Other relevant events include M and T Days, significant Cadet Wing events, Modified SOC days, Silver Training Weekends, etc. Use the Preview button to see more.",
                                     target="info-relevant-1",
                                     placement="right",
                                 ),
                                 dbc.Tooltip(
-                                    "Other relevant events include M and T Days, significiant Cadet Wing events, Modified SOC days, Silver Training Weekends, etc. Use the Preview button to see more.",
+                                    "Other relevant events include M and T Days, significant Cadet Wing events, Modified SOC days, Silver Training Weekends, etc. Use the Preview button to see more.",
                                     target="info-relevant-2",
                                     placement="right",
                                 ),
@@ -217,6 +221,8 @@ app.layout = html.Div([
                                     id="reminder-on",
                                     options=[{"label": " No reminder", "value": "no"}, {"label": " Reminder", "value": "yes"}],
                                     value="no",
+                                    persistence=True,
+                                    persistence_type="session",
                                     className="mb-1",
                                 ),
                                 html.Small("* Reminders for other relevant events are always turned off.", className="text-muted d-block mb-3"),
@@ -237,13 +243,15 @@ app.layout = html.Div([
                             ], md=6),
                             dbc.Col([
                                 dbc.Label("Reminder minutes before class", className="fw-bold", style={"color": USAFA_NAVY}),
-                                dbc.Input(id="reminder-minutes", type="number", value=15, min=0, step=5, className="mb-3", style={"maxWidth": "150px"}),
+                                dbc.Input(id="reminder-minutes", type="number", value=15, min=0, step=5, disabled=True, persistence=True, persistence_type="session", className="mb-3", style={"maxWidth": "150px"}),
                                 
                                 dbc.Label("Show time as", className="fw-bold", style={"color": USAFA_NAVY}),
                                 dbc.Select(
                                     id="busy-status", 
                                     options=[{"label": "Free", "value": "0"}, {"label": "Tentative", "value": "1"}, {"label": "Busy", "value": "2"}, {"label": "Out of Office", "value": "3"}], 
                                     value="2", 
+                                    persistence=True,
+                                    persistence_type="session",
                                     className="mb-3", style={"maxWidth": "250px"}
                                 ),
                                 html.Small("* Applies to teaching appointments only. Other relevant events are always Free.", className="text-muted d-block mb-3"),
@@ -252,8 +260,24 @@ app.layout = html.Div([
                                     id="private", 
                                     options=[{"label": " Mark appointments private", "value": "private"}], 
                                     value=[],
+                                    persistence=True,
+                                    persistence_type="session",
                                     className="mb-3"
                                 ),
+
+                                dbc.Label("Class length", className="fw-bold", style={"color": USAFA_NAVY}),
+                                dbc.RadioItems(
+                                    id="class-length",
+                                    options=[
+                                        {"label": " Standard (53 minutes)", "value": "53"},
+                                        {"label": " 1 hour (60 minutes)", "value": "60"},
+                                    ],
+                                    value="53",
+                                    persistence=True,
+                                    persistence_type="session",
+                                    className="mb-1",
+                                ),
+                                html.Small("* Start times stay the same; only the end time of each teaching appointment changes.", className="text-muted d-block mb-3"),
                             ], md=6)
                         ])
                     ])
@@ -277,6 +301,8 @@ app.layout = html.Div([
                                         {"label": "All appointments", "value": "all"},
                                     ],
                                     value="20",
+                                    persistence=True,
+                                    persistence_type="session",
                                     style={"maxWidth": "250px"}
                                 ),
                             ], md=4, className="mb-3 mb-md-0"),
@@ -448,7 +474,7 @@ def upload_status(calendar_key, contents, filename):
     except Exception as exc:
         return "", no_update, clear_upload, dbc.Alert(f"Calendar problem: {exc}", color="danger", dismissable=True), no_update, no_update, no_update, no_update
 
-def make_events_from_state(contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
+def make_events_from_state(contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end, class_length=None):
     df = logic.parse_uploaded_csv(contents, calendar_key=calendar_key)
     
     if filter_start or filter_end:
@@ -478,6 +504,7 @@ def make_events_from_state(contents, calendar_key, names, periods, locations, de
         reminder_minutes=int(reminder_minutes or 0),
         busy_status=str(busy_status or "2"),
         private=("private" in (private_values or [])),
+        class_minutes=int(class_length or 53),
     ) if course_rows else []
     
     if filter_start or filter_end:
@@ -506,11 +533,12 @@ COURSE_STATES = [
     State("preview-limit", "value"),
     State("reminder-on", "value"), State("reminder-minutes", "value"), State("busy-status", "value"), State("private", "value"),
     State("date-filter", "start_date"), State("date-filter", "end_date"),
+    State("class-length", "value"),
     prevent_initial_call=True,
 )
-def preview_events(_n_clicks, contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, preview_limit_value, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
+def preview_events(_n_clicks, contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, preview_limit_value, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end, class_length):
     try:
-        df, events = make_events_from_state(contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end)
+        df, events = make_events_from_state(contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end, class_length)
         academic_df = logic.filter_academic_rows(df, academic_mode)
         total = len(events) + len(academic_df)
         
@@ -586,7 +614,16 @@ def preview_events(_n_clicks, contents, calendar_key, names, periods, locations,
         return dbc.Alert(f"Problem: {exc}", color="danger", dismissable=True), ""
 
 @app.callback(
+    Output("reminder-minutes", "disabled"),
+    Input("reminder-on", "value"),
+)
+def toggle_reminder_minutes(reminder_value):
+    return reminder_value != "yes"
+
+
+@app.callback(
     Output("download", "data"),
+    Output("alert-container", "children", allow_duplicate=True),
     Input("download-ics", "n_clicks"),
     State("calendar-upload", "contents"),
     State("bundled-calendar-select", "value"),
@@ -594,11 +631,21 @@ def preview_events(_n_clicks, contents, calendar_key, names, periods, locations,
     State("academic-export-mode", "value"),
     State("reminder-on", "value"), State("reminder-minutes", "value"), State("busy-status", "value"), State("private", "value"),
     State("date-filter", "start_date"), State("date-filter", "end_date"),
+    State("class-length", "value"),
     prevent_initial_call=True,
 )
-def download_file(_n_ics, contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end):
-    df, events = make_events_from_state(contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end)
-    return dict(content=logic.events_to_ics(events, df, academic_mode), filename="usafa_schedule.ics", type="text/calendar")
+def download_file(_n_ics, contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end, class_length):
+    from dash import no_update
+    try:
+        df, events = make_events_from_state(contents, calendar_key, names, periods, locations, descriptions, categories, academic_mode, reminder_value, reminder_minutes, busy_status, private_values, filter_start, filter_end, class_length)
+        if contents:
+            filename = "usafa_schedule.ics"
+        else:
+            key = calendar_key or logic.DEFAULT_CALENDAR_KEY
+            filename = f"usafa_{key}_schedule.ics"
+        return dict(content=logic.events_to_ics(events, df, academic_mode), filename=filename, type="text/calendar"), None
+    except Exception as exc:
+        return no_update, dbc.Alert(f"Problem: {exc}", color="danger", dismissable=True)
 
 @app.callback(
     Output({"type": "course-name", "index": ALL}, "invalid"),

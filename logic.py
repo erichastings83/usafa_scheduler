@@ -252,9 +252,17 @@ def assemble_course_rows(names, periods, locations, descriptions, categories, al
     return rows
 
 
-def build_events(calendar_df, course_rows, reminder_on, reminder_minutes, busy_status, private):
+def build_events(calendar_df, course_rows, reminder_on, reminder_minutes, busy_status, private, class_minutes=None):
+    """Build teaching events.
+
+    class_minutes: None/53 keeps the standard 53-minute period end times;
+    any other value (e.g. 60) ends each class that many minutes after its start.
+    """
     schedule_days, modified_dates, _ = extract_schedule_days(calendar_df)
     events = []
+    class_minutes = int(class_minutes) if class_minutes is not None else None
+    if class_minutes is not None and class_minutes <= 0:
+        raise ValueError("Class length must be a positive number of minutes.")
 
     for course in course_rows:
         selected = set(course["periods"])
@@ -271,6 +279,8 @@ def build_events(calendar_df, course_rows, reminder_on, reminder_minutes, busy_s
                     continue
                 times = MODIFIED_SOC_PERIOD_TIMES if d in modified_dates else NORMAL_PERIOD_TIMES
                 start_t, end_t = times[period[1]]
+                if class_minutes is not None:
+                    end_t = (datetime.combine(d, start_t) + timedelta(minutes=class_minutes)).time()
                 desc_parts = [course["description"]] if course["description"] else []
                 if d in modified_dates:
                     desc_parts.append("Modified SOC: afternoon sections start one hour early.")
@@ -425,7 +435,7 @@ def academic_row_to_ics(lines, row, now, timezone_name):
 
 
 def events_to_ics(events, calendar_df=None, academic_mode="none", timezone_name="America/Denver"):
-    now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lines = [
         "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//USAFA Scheduler//Teaching Schedule App//EN",
         "CALSCALE:GREGORIAN", "METHOD:PUBLISH",

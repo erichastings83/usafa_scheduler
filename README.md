@@ -13,6 +13,7 @@ This Dash app generates Outlook-compatible `.ics` files for USAFA teaching sched
   - The "Periods" dropdown is expanded to show more options at once.
   - Added contact information directly into the footer.
 - **Export Options**: 
+  - Choose between **Standard (53 minutes)** and **1 hour (60 minutes)** class lengths for teaching appointments.
   - Filter events effortlessly by **Date Range**. The filter automatically configures itself to the start and end dates of the loaded academic calendar.
   - Added a new export mode to generate "Other relevant events only".
   - Academic calendar events are now forced to show as "Free" in Outlook, preventing calendar block-outs. 

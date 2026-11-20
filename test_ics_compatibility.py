@@ -595,6 +595,58 @@ class TestBundledCalendars:
             logic.parse_uploaded_csv(None, calendar_key="unknown")
 
 
+class TestClassLength:
+
+    def _events(self, class_minutes, calendar_df=None):
+        return logic.build_events(
+            calendar_df if calendar_df is not None else make_minimal_calendar_df(),
+            make_course_rows(), reminder_on=False, reminder_minutes=0,
+            busy_status="2", private=False, class_minutes=class_minutes,
+        )
+
+    def test_default_is_53_minutes(self):
+        events = logic.build_events(
+            make_minimal_calendar_df(), make_course_rows(),
+            reminder_on=False, reminder_minutes=0, busy_status="2", private=False,
+        )
+        assert events and all(e["start"] == time(7, 30) and e["end"] == time(8, 23) for e in events)
+
+    def test_explicit_53_matches_standard_times(self):
+        events = self._events(53)
+        assert all(e["end"] == time(8, 23) for e in events)
+
+    def test_60_minutes(self):
+        events = self._events(60)
+        assert events and all(e["start"] == time(7, 30) and e["end"] == time(8, 30) for e in events)
+
+    def test_60_minutes_modified_soc(self):
+        csv_text = (
+            "Subject,Start Date\n"
+            "M1,1/6/2027\n"
+            "Modified SOC - Afternoon Sections Start 1 Hour Early,1/6/2027\n"
+        )
+        df = pd.read_csv(io.StringIO(csv_text))
+        rows = [{"course": "Math 356", "periods": ["M6"], "location": "",
+                 "description": "", "categories": "Teaching"}]
+        events = logic.build_events(df, rows, False, 0, "2", False, class_minutes=60)
+        assert len(events) == 1
+        assert events[0]["start"] == time(13, 30)
+        assert events[0]["end"] == time(14, 30)
+
+    def test_ics_reflects_60_minutes(self):
+        df = make_minimal_calendar_df()
+        events = self._events(60, df)
+        ics = logic.events_to_ics(events, calendar_df=df, academic_mode="none")
+        vevents = parse_vevents(ics)
+        # 7:30-8:30 MDT on 8/12/2026 -> 13:30-14:30 UTC
+        assert any(v["DTSTART"] == "20260812T133000Z" and v["DTEND"] == "20260812T143000Z" for v in vevents)
+
+    def test_zero_class_minutes_raises(self):
+        import pytest
+        with pytest.raises(ValueError, match="positive number of minutes"):
+            self._events(0)
+
+
 # ---------------------------------------------------------------------------
 # Run with pytest
 # ---------------------------------------------------------------------------
